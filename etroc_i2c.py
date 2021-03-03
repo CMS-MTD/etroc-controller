@@ -42,6 +42,8 @@ class ETROC_I2C:
         time.sleep(1)
         answer= self.my_interface.i2c_writeread(etroc_add,1,payload)
         print("read register: {} output: {}".format(hex(register), hex(answer[1])))
+        if(answer[0] != 0):
+            raise Exception("Error with reading internal register {} from {}".format(hex(register), hex(etroc_address)))
         return answer[1]
 
     def setupETROC(self):
