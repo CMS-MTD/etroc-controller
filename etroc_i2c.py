@@ -58,3 +58,21 @@ class ETROC_I2C:
                 output = self.etroc_read_register(command[1], command[2])
             else:
                 raise ValueError("Error: {} command not recognized".format(command))
+
+    def write_default(self):
+        for key in self.r.ETROC_A_ADDRESS_DICT:
+            self.etroc_write_register(self.r.ETROC_REGA_ADDRESS, key, self.r.ETROC_A_ADDRESS_DICT[key]) 
+        for key in self.r.ETROC_B_ADDRESS_DICT:
+            self.etroc_write_register(self.r.ETROC_REGB_ADDRESS, key, self.r.ETROC_B_ADDRESS_DICT[key])
+
+    def read_all_registers(self):
+        for key in self.r.ETROC_A_ADDRESS_DICT:
+            self.etroc_read_register(self.r.ETROC_REGA_ADDRESS, key) 
+        for key in self.r.ETROC_B_ADDRESS_DICT:
+            self.etroc_read_register(self.r.ETROC_REGB_ADDRESS, key)
+
+    def disable_scrambling(self):
+        self.run('w', REGB, 0x06, 0x40)
+
+
+

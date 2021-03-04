@@ -35,4 +35,6 @@ if __name__ == '__main__':
         ('r', REGB, 0x03),
     ]
     i2c.run(commands)
+    i2c.write_default()
+    i2c.read_all_registers()
 
