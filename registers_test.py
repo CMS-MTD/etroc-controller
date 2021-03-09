@@ -21,7 +21,7 @@ if __name__ == '__main__':
         ('r', REGA, 0x02),
         ('r', REGA, 0x03),
     ]
-    i2c.run(commands)
+    #i2c.run(commands)
 
     print("-"*50)
     commands = [
@@ -34,7 +34,14 @@ if __name__ == '__main__':
         ('r', REGB, 0x02),
         ('r', REGB, 0x03),
     ]
-    i2c.run(commands)
+    #i2c.run(commands)
     i2c.write_default()
-    i2c.read_all_registers()
-
+    #i2c.read_all_registers()
+    #i2c.load_default_no_termination()
+    #i2c.RBMUX_test()
+    #i2c.set_counter_readout_1G28()
+    #i2c.set_DAC_4bits_high()
+    #i2c.set_TDC_readout_1G28()
+    #i2c.set_random_data()
+    #i2c.set_random_data_copy()
+    i2c.set_random_data_copy2_working()
