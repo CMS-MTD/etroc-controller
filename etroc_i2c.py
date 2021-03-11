@@ -3,26 +3,30 @@ from etroc_registers import ETROC_Regs
 import time
 
 class ETROC_I2C:
-    def __init__(self, dongle=1):
-        self.my_interface=USB_dongle()
-        self.my_interface.i2c_connect(dongle)
+    def __init__(self, dongle=1, verbose=None):
+        self.my_interface=USB_dongle(dongle)
+        self.my_interface.i2c_connect(1)
         self.r = ETROC_Regs()        
+        self.verbose = verbose
+        self.delay = 0.01
 
     def mux_write_register(self, register, value):
         """write a value to a register"""
         reg_add=register >> 1
         payload=[value]
-        print("sending: {} to register: {}".format(hex(value), hex(register)))
-        time.sleep(1)
+        if self.verbose is 1:
+            print("sending: {} to register: {}".format(hex(value), hex(register)))
+        time.sleep(self.delay)
         self.my_interface.i2c_write(reg_add,payload)
             
     def mux_read_register(self,register):
         """read a value from a register - return register byte value"""
         reg_add=register >> 1
         payload=[reg_add]
-        time.sleep(1)
+        time.sleep(self.delay)
         answer= self.my_interface.i2c_read(reg_add,1)
-        print("read register: {} output: {}".format(hex(register),hex(answer[1])))    
+        if self.verbose is 1:
+            print("read register: {} output: {}".format(hex(register),hex(answer[1])))    
         return answer[1]
             
     def etroc_write_register(self,etroc_address,register,value):
@@ -30,11 +34,10 @@ class ETROC_I2C:
         etroc_add=etroc_address >> 1
         reg_add=register
         payload=[reg_add]+[value]
-        if hex(etroc_address)==hex(self.r.ETROC_REGA_ADDRESS):
-            print("sending: {} to register: A-{}".format(hex(value), hex(register)))
-        elif hex(etroc_address)==hex(self.r.ETROC_REGB_ADDRESS):
-            print("sending: {} to register: B-{}".format(hex(value), hex(register))) 
-        time.sleep(1)
+        if self.verbose is 1:
+            REG = "A" if hex(etroc_address)==hex(self.r.ETROC_REGA_ADDRESS) else "B"
+            print("sending: {} to register: {}-{}".format(hex(value), REG, hex(register)))
+        time.sleep(self.delay)
         self.my_interface.i2c_write(etroc_add,payload)
     
     def etroc_read_register(self,etroc_address,register):
@@ -42,12 +45,11 @@ class ETROC_I2C:
         etroc_add=etroc_address >> 1
         reg_add=register
         payload=[reg_add]
-        time.sleep(1)
+        time.sleep(self.delay)
         answer= self.my_interface.i2c_writeread(etroc_add,1,payload)
-        if hex(etroc_address)==hex(self.r.ETROC_REGA_ADDRESS):
-            print("read register:A-{} output: {}".format(hex(register), hex(answer[1])))
-        elif hex(etroc_address)==hex(self.r.ETROC_REGB_ADDRESS):
-            print("read register:B-{} output: {}".format(hex(register), hex(answer[1]))) 
+        if self.verbose is 1:
+            REG = "A" if hex(etroc_address)==hex(self.r.ETROC_REGA_ADDRESS) else "B"
+            print("read register:{}-{} output: {}".format(REG, hex(register), hex(answer[1])))
         if(answer[0] != 0):
             raise Exception("Error with reading internal register {} from {}".format(hex(register), hex(etroc_address)))
         return answer[1]
@@ -66,19 +68,19 @@ class ETROC_I2C:
                 raise ValueError("Error: {} command not recognized".format(command))
 
     def write_default(self):
-        for key in self.r.ETROC_A_ADDRESS_DICT:
-            self.etroc_write_register(self.r.ETROC_REGA_ADDRESS, key, self.r.ETROC_A_ADDRESS_DICT[key]) 
-        for key in self.r.ETROC_B_ADDRESS_DICT:
-            self.etroc_write_register(self.r.ETROC_REGB_ADDRESS, key, self.r.ETROC_B_ADDRESS_DICT[key])
+        for key in self.r.ETROC_REGA_ADDRESS_DICT:
+            self.etroc_write_register(self.r.ETROC_REGA_ADDRESS, key, self.r.ETROC_REGA_ADDRESS_DICT[key]) 
+        for key in self.r.ETROC_REGB_ADDRESS_DICT:
+            self.etroc_write_register(self.r.ETROC_REGB_ADDRESS, key, self.r.ETROC_REGB_ADDRESS_DICT[key])
 
     def read_all_registers(self):
-        for key in self.r.ETROC_A_ADDRESS_DICT:
+        for key in self.r.ETROC_REGA_ADDRESS_DICT:
             self.etroc_read_register(self.r.ETROC_REGA_ADDRESS, key) 
-        for key in self.r.ETROC_B_ADDRESS_DICT:
+        for key in self.r.ETROC_REGB_ADDRESS_DICT:
             self.etroc_read_register(self.r.ETROC_REGB_ADDRESS, key)
 
-    #def disable_scrambling(self):
-        #self.run('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x40)
+    def disable_scrambling(self):
+        self.run('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x40)
 
     def load_default(self):
         self.setupETROC()
@@ -87,8 +89,8 @@ class ETROC_I2C:
 
     def load_default_no_termination(self):
         self.setupETROC()
-        for key in self.r.ETROC_A_ADDRESS_DICT:
-            self.etroc_write_register(self.r.ETROC_REGA_ADDRESS, key, self.r.ETROC_A_ADDRESS_DICT[key]) 
+        for key in self.r.ETROC_REGA_ADDRESS_DICT:
+            self.etroc_write_register(self.r.ETROC_REGA_ADDRESS, key, self.r.ETROC_REGA_ADDRESS_DICT[key]) 
         commands = [
             ('w', self.r.ETROC_REGB_ADDRESS, 0x00, 0x1C),
             ('w', self.r.ETROC_REGB_ADDRESS, 0x01, 0x01),
@@ -145,6 +147,7 @@ class ETROC_I2C:
             ('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x40),
             ('w', self.r.ETROC_REGA_ADDRESS, 0x01, 0x37),
             ('w', self.r.ETROC_REGA_ADDRESS, 0x0A, 0x00),
+            ('w', self.r.ETROC_REGA_ADDRESS, 0x0B, 0x02),
             ('r', self.r.ETROC_REGB_ADDRESS, 0x00),
             ('r', self.r.ETROC_REGB_ADDRESS, 0x06),
         ]

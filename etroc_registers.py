@@ -5,7 +5,7 @@ class ETROC_Regs:
         self.MUX_DEFAULT_VALUE = 0x08
         self.ETROC_REGA_ADDRESS = 0x04
         self.ETROC_REGB_ADDRESS = 0xFA
-        self.ETROC_A_ADDRESS_DICT = { 
+        self.ETROC_REGA_ADDRESS_DICT = { 
             0x00:0xF8,
             0x01:0x37,
             0x02:0xFF,
@@ -39,7 +39,7 @@ class ETROC_Regs:
             0x1E:0xFF,
             0x1F:0xFF,
             }
-        self.ETROC_B_ADDRESS_DICT = {
+        self.ETROC_REGB_ADDRESS_DICT = {
             0x00:0x1C,
             0x01:0x01,
             0x02:0x00,
