@@ -108,7 +108,7 @@ class InterfaceError(Exception):
 
 class USB_dongle():
     """ HID interface """
-    def __init__(self):
+    def __init__(self, dongle=None):
         """
 
         :rtype : object
@@ -120,9 +120,13 @@ class USB_dongle():
             print("Device on port: ",iusb["path"])
         tDongle = -1 
         if nDongle != 1:
-            while not (tDongle > 0 and tDongle < nDongle + 1):
-                print("Select a USB interface (from 1 to ",nDongle,")")
-                tDongle = int(input())
+            if dongle:
+                print("Using USB interface from dongle: ",dongle)
+                tDongle = dongle
+            else:
+                while not (tDongle > 0 and tDongle < nDongle + 1):
+                    print("Select a USB interface (from 1 to ",nDongle,")")
+                    tDongle = int(input())
         else: 
             tDongle = 1
         found = False
