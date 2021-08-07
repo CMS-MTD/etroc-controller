@@ -1,12 +1,8 @@
+#!/bin/env python3
+
 from etroc_i2c import ETROC_I2C
+from binaryFunctions import add_binary, get_binary_string
 import os
-
-
-def add_binary(a, b, shift=8):
-    return a<<shift | b
-
-def get_binary_string(a, nBits=8):
-    return "{0:{fill}{nBits}b}".format(a, nBits=nBits, fill='0')
 
 def getAllQinj():
     #Gets all possible Qinj values
@@ -42,19 +38,17 @@ def getAllThresholdsPixel15():
 
 if __name__ == '__main__':
     # Create instance of ETROC I2C class to communicate with the ETROC via the CERN dongle
-    i2c = ETROC_I2C(dongle=2, verbose=1)
+    i2c = ETROC_I2C(dongle=2, verbose=None)
     i2c.setupETROC()
     REGA = i2c.r.ETROC_REGA_ADDRESS
     REGB = i2c.r.ETROC_REGB_ADDRESS
     i2c.write_default()
-    #i2c.read_all_registers()
 
-    firstRead = []
+    dataTuple = []
     allThresholds = getAllThresholds()    
     #allThresholds = getAllThresholdsPixel15()
     for idx, threshold in enumerate(allThresholds):
-        #if idx % 64 != 1: continue
-        if idx < int(0x175) or idx>int(0x190): continue
+        if idx < int(0x165) or idx>int(0x190): continue
 
         #Reading out Pixel 1
         commands=[
@@ -84,19 +78,18 @@ if __name__ == '__main__':
         #]
 
         i2c.run(commands)
-        break
         print("Setting threshold to {} {} {}".format(threshold['binary'], hex(threshold['regB']), hex(threshold['regA'])))
-        print(commands)
-        #i2c.read_all_registers()
 
         os.system('./run_read_DebugRAM_2links.sh')
         with open('etl-kcu105-ipbus/etroc_readout.dat') as f:
             lines = f.read().splitlines()
-            firstRead.append((threshold['binary'], bin(int(lines[0], 16))))
-            #for l in lines:
-            #    print(len(lines), l, bin(int(l, 16)))
-        #break
-        #if idx is 5: break
 
-    for l in firstRead:        
-        print(l[0], l[1], int(l[1],2)-0b10000000000000000000000000000000)
+            nHits = 0
+            for l in lines:
+                word = int(l, 16)
+                nHits += word % 2
+
+            dataTuple.append((threshold['binary'], lines, nHits))
+
+    for l in dataTuple:        
+        print(l[0], l[2])

@@ -155,12 +155,12 @@ class ETROC_I2C:
             ('w', self.r.ETROC_REGA_ADDRESS, 0x01, 0x37), # default (37), Q injected amplitude
             ('w', self.r.ETROC_REGA_ADDRESS, 0x0A, 0x00), # default (00), signal threshold pixel 1
             ('w', self.r.ETROC_REGA_ADDRESS, 0x0B, 0x02), # default (02), signal threshold (only first two bits belong to pixel 1 the rest belong to pixel 2)
+        ]
+        self.run(commands)
 
-            #('w', self.r.ETROC_REGB_ADDRESS, 0x07, 0x30),
-            #('w', self.r.ETROC_REGB_ADDRESS, 0x0A, 0x30),
-
-            #('r', self.r.ETROC_REGB_ADDRESS, 0x00),
-            #('r', self.r.ETROC_REGB_ADDRESS, 0x06),
+    def enable_scrambling(self):
+        commands= [
+            ('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x41), # disable (40)/enable (41) scrambling
         ]
         self.run(commands)
 
