@@ -140,16 +140,27 @@ class ETROC_I2C:
         ]
         self.run(commands)
 
+    def set_DAC_4bits_low(self):
+        commands= [
+            ('w', self.r.ETROC_REGA_ADDRESS, 0x0A, 0x00),
+            ('r', self.r.ETROC_REGA_ADDRESS, 0x0A),
+        ]
+        self.run(commands)
+
     def set_TDC_readout_1G28(self):
         self.setupETROC() 
         commands=[
-            ('w', self.r.ETROC_REGB_ADDRESS, 0x00, 0x1C),
-            ('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x40),
-            ('w', self.r.ETROC_REGA_ADDRESS, 0x01, 0x37),
-            ('w', self.r.ETROC_REGA_ADDRESS, 0x0A, 0x00),
-            ('w', self.r.ETROC_REGA_ADDRESS, 0x0B, 0x02),
-            ('r', self.r.ETROC_REGB_ADDRESS, 0x00),
-            ('r', self.r.ETROC_REGB_ADDRESS, 0x06),
+            ('w', self.r.ETROC_REGB_ADDRESS, 0x00, 0x1C), # default (1C)
+            ('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x40), # disable (40)/enable (41) scrambling
+            ('w', self.r.ETROC_REGA_ADDRESS, 0x01, 0x37), # default (37), Q injected amplitude
+            ('w', self.r.ETROC_REGA_ADDRESS, 0x0A, 0x00), # default (00), signal threshold pixel 1
+            ('w', self.r.ETROC_REGA_ADDRESS, 0x0B, 0x02), # default (02), signal threshold (only first two bits belong to pixel 1 the rest belong to pixel 2)
+        ]
+        self.run(commands)
+
+    def enable_scrambling(self):
+        commands= [
+            ('w', self.r.ETROC_REGB_ADDRESS, 0x06, 0x41), # disable (40)/enable (41) scrambling
         ]
         self.run(commands)
 
