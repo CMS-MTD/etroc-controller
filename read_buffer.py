@@ -4,6 +4,8 @@ import random # For randint
 import sys # For sys.argv and sys.exit
 import uhal
 import time
+import optparse
+
 from descrambler import descramble
 from binaryFunctions import get_binary_string
 
@@ -129,9 +131,15 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
     return lockloss, words, offset
 
 if __name__ == '__main__':
-    nEvents = 10000
-    mode = 'tdc' #'counter' #'constant'
-    scrambled = True
+    parser = optparse.OptionParser("usage: %prog [options]\n")
+    parser.add_option('--nEvents', dest='nEvents', type='int', default = 1000, help="Set number of events to save to tmp data file")
+    parser.add_option('--mode', dest='mode', type='string', default = 'tdc', help="Set offset finder type")
+    parser.add_option('--scrambled', dest='scrambled', default = True, help="Descramble the data or not")
+    options, args = parser.parse_args()
+
+    nEvents = options.nEvents
+    mode = options.mode
+    scrambled = options.scrambled
 
     data = []
     while( len(data) < nEvents):
