@@ -19,7 +19,7 @@ if __name__ == '__main__':
     # --------------------------------------
     i2c.set_counter_readout_1G28(); i2c.set_DAC_4bits_high()
     #i2c.set_counter_readout_1G28(); i2c.set_DAC_4bits_low()
-    i2c.enable_scrambling()
+    #i2c.enable_scrambling()
 
     # --------------------------------------
     # Set ETROC to TDC mode

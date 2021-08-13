@@ -4,6 +4,11 @@ from binaryFunctions import add_binary, get_binary_string
 import os
 import ROOT
 from array import array
+import optparse
+
+def getPhaseSettings():
+    #Gets phase settings; each bit is 100ps
+    return [0x00, 0x3F, 0x7F, 0xBF]
 
 def getAllQinj():
     #Gets all possible Qinj values
@@ -38,6 +43,16 @@ def getAllThresholdsPixel15():
     return allThresholds
 
 if __name__ == '__main__':
+    parser = optparse.OptionParser("usage: %prog [options]\n")
+    parser.add_option('--Qinj', dest='Qinj', type='int', default = 0xFF, help="Set Qinj register value")
+    parser.add_option('--outfile', dest='outfile', default = "data.root", help="Set output root file name")
+    options, args = parser.parse_args()
+
+    Qinj = options.Qinj
+    outfile = options.outfile
+    print("Qinj value: {}".format(hex(Qinj)))
+    print("Outfile name: {}".format(outfile))
+
     #################################################
     # Create instance of ETROC I2C class to communicate with the ETROC via the CERN dongle
     #################################################
@@ -55,43 +70,46 @@ if __name__ == '__main__':
     dataTuple = []
     allThresholds = getAllThresholds()    
     #allThresholds = getAllThresholdsPixel15()
-    for idx, threshold in enumerate(allThresholds):
-        if idx < 360 or idx > 400: continue
+    for idx, threshold in reversed(list(enumerate(allThresholds))):
+        #if idx < 360 or idx > 400: continue
+        if idx < 250 or idx > 550: continue
         #if idx != 377: continue
-
+        
         #Reading out Pixel 1
         commands=[
             ('w', i2c.r.ETROC_REGB_ADDRESS, 0x00, 0x1C), # default (1C)
             ('w', i2c.r.ETROC_REGB_ADDRESS, 0x06, 0x41), # disable (40)/enable (41) scrambling
             #('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0x37), # default (37), Q injected amplitude
             #('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0x87), # default (37), Q injected amplitude
-            ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0xCF), # default (37), Q injected amplitude
+            #('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0xCF), # default (37), Q injected amplitude
             #('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0xFF), # default (37), Q injected amplitude
+            ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, Qinj), # default (37), Q injected amplitude
             ('w', i2c.r.ETROC_REGA_ADDRESS, 0x0A, threshold['regA']), # default (00), signal threshold pixel 1
             ('w', i2c.r.ETROC_REGA_ADDRESS, 0x0B, threshold['regB']), # default (02), signal threshold (only first two bits belong to pixel 1 the rest belong to pixel 2)
             ('w', i2c.r.ETROC_REGB_ADDRESS, 0x04, 0x00), # default (00), Phase setting
-            ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0x00), ### 01 on, 00 off. disables Q INJ (I2C A REG 05)
+            ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0x01), ### 01 on, 00 off. disables Q INJ (I2C A REG 05)
             ('w', i2c.r.ETROC_REGA_ADDRESS, 0x06, 0x00),  ### 00 regardless. disables Q INJ (I2C A REG 06)
         ]
 
         ##Reading out Pixel 15
         #commands=[
         #    ('w', i2c.r.ETROC_REGB_ADDRESS, 0x00, 0x1C), # default (1C)
-        #    ('w', i2c.r.ETROC_REGB_ADDRESS, 0x06, 0x40), # disable (40)/enable (41) scrambling
-        #    #('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0x37), # default (37), Q injected amplitude
-        #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, 0xFF), # default (37), Q injected amplitude
+        #    ('w', i2c.r.ETROC_REGB_ADDRESS, 0x06, 0x41), # disable (40)/enable (41) scrambling
+        #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, Qinj), # default (37), Q injected amplitude
         #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0x00), # default (01)
         #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x06, 0x80), # default (00)
         #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x07, 0x38), # default (01)
         #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x1C, threshold['regA']), # default (20), signal threshold pixel 1
         #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x1D, threshold['regB']), # default (80), signal threshold (only first two bits belong to pixel 1 the rest belong to pixel 2)
         #    ('w', i2c.r.ETROC_REGB_ADDRESS, 0x04, 0x00), # default (00), Phase setting
+        #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0x01), ### 01 on, 00 off. disables Q INJ (I2C A REG 05)
+        #    ('w', i2c.r.ETROC_REGA_ADDRESS, 0x06, 0x00),  ### 00 regardless. disables Q INJ (I2C A REG 06)
         #]
 
         i2c.run(commands)
         print("Setting threshold to {} {} {} {}".format(threshold['binary'], hex(threshold['regB']), hex(threshold['regA']), idx))
 
-        os.system('./run_read_buffer.sh 10000 tdc True')
+        os.system('./run_read_buffer.sh 1000 tdc True')
         with open('etl-kcu105-ipbus/etroc_readout.dat') as f:
             lines = f.read().splitlines()
 
@@ -105,7 +123,7 @@ if __name__ == '__main__':
     #################################################
     # Save recored data to nTuples
     #################################################
-    root_file = ROOT.TFile("data.root", "RECREATE")
+    root_file = ROOT.TFile(outfile, "RECREATE")
     tree = ROOT.TTree("tree","tree")
     thresholdDAC_ = array('I',[0])
     nHits_ = array('I',[0])

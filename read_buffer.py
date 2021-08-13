@@ -19,20 +19,24 @@ def allignWord(binstring, wordsize, pattern, persist = 10, secPattern = None, of
                 alligned = False
         if(alligned):
             return x
+    print("-"*50)
+    print("Didn't find an offset for the \"{}\" pattern that persisted for \"{}\" words".format(pattern, persist))
 
 def checkLockWrite(binstring, wordsize, pattern):
     lockLoss = False
     words = []
+    lastGoodBitIdx = 0
     for x in range(0, len(binstring), wordsize):
+        lastGoodBitIdx = x
         word = binstring[x:x+wordsize]
         words.append(hex(int(word, 2)))
-        #print(int(word, 2), hex(int(word, 2)), word)
+        #print int(word, 2), hex(int(word, 2)), word
 
         if(binstring[x:x+len(pattern)] != pattern):
             #print "lock loss: ", x
             lockLoss = True
             break
-    return lockLoss, words
+    return lockLoss, words, lastGoodBitIdx
 
 def readout(reset = 0, mode = 'tdc', scrambled = False): 
     uhal.disableLogging()
@@ -123,7 +127,11 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
 
     #offset = allignWord(frame,32,"01", 16)    
     #print "offset for the false allignment: ", offset
-    lockloss, words = checkLockWrite(lockedFrame,32,"10")
+    lockloss, words, lastGoodBitIdx = checkLockWrite(lockedFrame,32,"10")
+
+    tryAgain = True
+    if tryAgain and lockloss and lastGoodBitIdx > 32*10:
+        lockloss, words, lastGoodBitIdx = checkLockWrite(lockedFrame[:lastGoodBitIdx],32,"10")
 
     if scrambled:
         words = descramble(words)
@@ -146,7 +154,7 @@ if __name__ == '__main__':
         lockloss, words, offset = readout(1, mode, scrambled)
 
         if not lockloss:
-            data += words[:-1] #Last word is always half empty
+            data += words[1:-1] #First and Last word is always half empty
         print("nEvents = {}, offset = {}".format(len(data), offset))
 
     data = data[:nEvents]
