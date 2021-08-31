@@ -47,9 +47,9 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
     connectionMgr = uhal.ConnectionManager("file://" + connectionFilePath);
     hw = connectionMgr.getDevice(deviceId);
     TOFHIR_status    = hw.getNode("LINK1_status")
-    debug_RAM1 		 = hw.getNode("Tx1_debug_RAM")
+    debug_RAM1 	     = hw.getNode("Tx1_debug_RAM")
     debug_RAM1_start = hw.getNode("Tx1_debug_RAM_start")
-    debug_RAM0 		 = hw.getNode("Tx0_debug_RAM")
+    debug_RAM0 	     = hw.getNode("Tx0_debug_RAM")
     debug_RAM0_start = hw.getNode("Tx0_debug_RAM_start")
     rst_Rx1_addr_cnt = hw.getNode("rst_Rx1_addr_cnt")
     rst_Rx0_addr_cnt = hw.getNode("rst_Rx0_addr_cnt")
@@ -58,7 +58,7 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
     Value = []
     MEM0 = []
     MEM1 = []
-    wait = 1
+    wait = 2
     TxValue = reset  
     Value = 1
     depth = 128*2
@@ -66,7 +66,7 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
 
     debug_RAM1_start.write(int(Value)); 
     hw.dispatch();
-    time.sleep(wait) # wait 1 sec
+    #time.sleep(wait)
 
     #"----------- data in output lpGBT uplink for each e-port ------------"
     MEM0_decode = []
@@ -119,7 +119,9 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
     elif mode == 'tdc':
         offset = allignWord(frame,32,"10", 16)
     elif mode == 'constant':
-        offset = 28
+        offset = 11
+
+    os = allignWord(frame,32,"10", 16)
 
     #print "offset for the allignment: ", offset
     lockedFrame = frame[offset:]
@@ -136,27 +138,34 @@ def readout(reset = 0, mode = 'tdc', scrambled = False):
     if scrambled:
         words = descramble(words)
 
-    return lockloss, words, offset
+    if offset > 32:
+        lockloss = True
+
+    return lockloss, words, offset, os
 
 if __name__ == '__main__':
     parser = optparse.OptionParser("usage: %prog [options]\n")
     parser.add_option('--nEvents', dest='nEvents', type='int', default = 1000, help="Set number of events to save to tmp data file")
     parser.add_option('--mode', dest='mode', type='string', default = 'tdc', help="Set offset finder type")
-    parser.add_option('--scrambled', dest='scrambled', default = True, help="Descramble the data or not")
+    parser.add_option('--scrambled', dest='scrambled', default = 'True', help="Descramble the data or not")
     options, args = parser.parse_args()
 
     nEvents = options.nEvents
     mode = options.mode
-    scrambled = options.scrambled
+    scrambled = False if options.scrambled == 'False' else True
 
+    idx = 0
     data = []
     while( len(data) < nEvents):
-        lockloss, words, offset = readout(1, mode, scrambled)
-
+        lockloss, words, offset, os = readout(1, mode, scrambled)
+    
         if not lockloss:
             data += words[1:-1] #First and Last word is always half empty
-        print("nEvents = {}, offset = {}".format(len(data), offset))
+            if idx % 50 == 0:
+                print("nEvents = {}, used offset = {}, found offset = {}".format(len(data), offset, os))
 
+        idx += 1
+    
     data = data[:nEvents]
     fileData = open("etroc_readout.dat","w")
     for d in data:

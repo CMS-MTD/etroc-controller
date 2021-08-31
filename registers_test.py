@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 from etroc_i2c import ETROC_I2C
 
 if __name__ == '__main__':
