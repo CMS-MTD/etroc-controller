@@ -9,16 +9,16 @@ import time
 
 def getPhaseSettings():
     #Gets phase settings; each bit is 100ps
-    #return list(p for p in range(0x00,0xFA,10))
-    return [0x00, 0x3F, 0x7F, 0xBF]
+    return list(p for p in range(0x00,0xFA,10))
+    #return [0x00, 0x3F, 0x7F, 0xBF]
 
 def getAllQinj():
     #Gets all possible Qinj values
-    allQinj = []
+    allQinj = {}
     b = 0b111
-    for a in range(0b0, 0b11111 + 0b1):
+    for idx, a in enumerate(range(0b0, 0b11111 + 0b1)):
         c = bf.add_binary(a, b, 3)
-        allQinj.append(dict(binary=bf.get_binary_string(c), reg1=c))
+        allQinj[c] = dict(binary=bf.get_binary_string(c), reg1=c, fC=idx)
     return allQinj
 
 if __name__ == '__main__':
@@ -29,7 +29,10 @@ if __name__ == '__main__':
     parser.add_option('--nEvents', dest='nEvents', type='int', default = 32000, help="Set number of events to take per setting")
     options, args = parser.parse_args()
 
+    allQinj = getAllQinj()
     Qinj = options.Qinj
+    QinjValue = allQinj[Qinj]['fC']
+
     outfile = options.outfile
     nEvents = options.nEvents
     pixNum = options.pixNum
@@ -50,20 +53,18 @@ if __name__ == '__main__':
     #################################################
     # Loop over all thresholds and collect data
     #################################################
-    allQinj = getAllQinj()
     allPhase = getPhaseSettings()
-
     dataTuple = []
     pixelInfo = bf.pixels[pixNum]
     allThresholds = pixelInfo.getAllThresholds
     for idPhase, phase in enumerate(allPhase):
         if not doPhaseScan and idPhase !=0: break
-        if phase != 0x3F: continue
+        if phase != 0x00: continue
 
         for idx, threshold in reversed(list(enumerate(allThresholds))):
-            #if idx < 250 or idx > 450: continue
+            #if idx < 250 or idx > 410: continue
             if idx < 200 or idx > 800: continue
-            #if idx != 500: continue
+            #if idx != 410: continue
         
             commands=[
                 ('w', i2c.r.ETROC_REGB_ADDRESS, 0x00, 0x1C), # default (1C)
@@ -71,6 +72,7 @@ if __name__ == '__main__':
                 ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, Qinj), # default (37), Q injected amplitude
                 ('w', i2c.r.ETROC_REGB_ADDRESS, 0x04, phase), # default (00), Phase setting
                 ('w', i2c.r.ETROC_REGA_ADDRESS, 0x04, 0x00), # default 0x11 
+                #('w', i2c.r.ETROC_REGA_ADDRESS, 0x04, 0x11), # default 0x11 
 
                 ('w', i2c.r.ETROC_REGA_ADDRESS, threshold['reg1Address'], threshold['reg1']), # default (20), signal threshold pixel 1
                 ('w', i2c.r.ETROC_REGA_ADDRESS, threshold['reg2Address'], threshold['reg2']), # default (80), signal threshold (only first two bits belong to pixel 1 the rest belong to pixel 2)            
@@ -81,18 +83,18 @@ if __name__ == '__main__':
 
             i2c.run(commands)
             print("Setting threshold to {} {}, Setting phase to {} {}".format(threshold['binary'], idx, hex(phase), phase))
-
+            
             #os.system('./run_read_buffer.sh 10000 constant True')
             os.system('./run_read_buffer.sh {} tdc True'.format(nEvents))
             with open('etl-kcu105-ipbus/etroc_readout.dat') as f:
                 lines = f.read().splitlines()
-    
+            
                 nHits = 0
                 for l in lines:
                     word = int(l, 16)
                     nHits += word % 2
-    
-                dataTuple.append((threshold['binary'], idx, lines, nHits, phase))
+            
+                dataTuple.append((threshold['binary'], idx, lines, nHits, phase, pixNum, QinjValue))
     
     #################################################
     # Save recored data to nTuples
@@ -107,6 +109,8 @@ if __name__ == '__main__':
     CAL_ = array('I',[0])
     hitFlag_ = array('I',[0])
     phaseDAC_ = array('I',[0])
+    pixNum_ = array('I',[0])
+    QinjValue_ = array('I',[0])
     tree.Branch('thresholdDAC', thresholdDAC_, 'thresholdDAC/I')
     tree.Branch('nHits', nHits_, 'nHits/I')
     tree.Branch('word', word_, 'word/I')
@@ -114,12 +118,15 @@ if __name__ == '__main__':
     tree.Branch('TOA', TOA_, 'TOA/I')
     tree.Branch('CAL', CAL_, 'CAL/I')
     tree.Branch('hitFlag', hitFlag_, 'hitFlag/I')
-    tree.Branch('phaseDAC', phaseDAC_, 'phaseDAC/I')
+    tree.Branch('pixNum', pixNum_, 'pixNum/I')
+    tree.Branch('QinjValue', QinjValue_, 'QinjValue/I')
     
-    for thresholdBinary, thresholdDAC, lines, nHits, phase in dataTuple:
+    for thresholdBinary, thresholdDAC, lines, nHits, phase, pixNum, QinjValue in dataTuple:
         thresholdDAC_[0] = thresholdDAC
         nHits_[0] = nHits
         phaseDAC_[0] = phase
+        pixNum_[0] = pixNum
+        QinjValue_[0] = QinjValue
         for l in lines:
             word = bin(int(l,16))
             word_[0] = int(l,16)
