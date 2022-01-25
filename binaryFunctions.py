@@ -14,6 +14,17 @@ def set_bit(num, idx, value):
 def get_bit(num, idx):
     return int(num & (1 << idx) != 0)
 
+def update_binary_num(nMain, nChange, mask):
+    sMain = get_binary_string(nMain)
+    sMain = list(sMain)
+    sChange = get_binary_string(nChange)
+
+    for i in range(len(sMain)):
+        if mask[i] == 'X':
+            sMain[i] = sChange[i]
+    sMain = ''.join(sMain)
+    return int(sMain, 2)
+
 def getAllThresholdsType0(reg1Address, reg2Address):
     #000000XX XXXXXXXX
     #00000010 00000000
@@ -21,7 +32,7 @@ def getAllThresholdsType0(reg1Address, reg2Address):
     for b in range(0b00, 0b11 + 0b1):
         for a in range(0b00, 0b11111111 + 0b1):
             threshold = add_binary(b, a)
-            allThresholds.append(dict(binary=get_binary_string(threshold, 16), reg2=b, reg1=a, reg2Address=reg2Address, reg1Address=reg1Address))
+            allThresholds.append(dict(binary=get_binary_string(threshold, 16), reg2=b, reg1=a, reg2Address=reg2Address, reg1Address=reg1Address, mask2='000000XX', mask1='XXXXXXXX'))
     return allThresholds
 
 def getAllThresholdsType1(reg1Address, reg2Address):
@@ -34,7 +45,7 @@ def getAllThresholdsType1(reg1Address, reg2Address):
             c = add_binary(a, constant, 2)
             threshold = add_binary(b, a)
             total = add_binary(b, c)
-            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address))
+            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address, mask2='0000XXXX', mask1='XXXXXX10'))
     return allThresholds
 
 def getAllThresholdsType2(reg1Address, reg2Address):
@@ -47,7 +58,7 @@ def getAllThresholdsType2(reg1Address, reg2Address):
             c = add_binary(a, constant, 4)
             threshold = add_binary(b, a)
             total = add_binary(b, c)
-            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address))
+            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address, mask2='00XXXXXX', mask1='XXXX1000'))
     return allThresholds
 
 def getAllThresholdsType3(reg1Address, reg2Address):
@@ -60,7 +71,7 @@ def getAllThresholdsType3(reg1Address, reg2Address):
             c = add_binary(a, constant, 6)
             threshold = add_binary(b, a)
             total = add_binary(b, c)
-            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address))
+            allThresholds.append(dict(binary=get_binary_string(total, 16), reg2=b, reg1=c, reg2Address=reg2Address, reg1Address=reg1Address, mask2='XXXXXXXX', mask1='XX100000'))
     return allThresholds
 
 class pixelInfo:
@@ -72,25 +83,13 @@ class pixelInfo:
         self.grid07 = grid07
         self.q06 = q06
         self.q05 = q05
+        self.baseline = 0
+        self.thresholdReg1 = None
+        self.thresholdReg2 = None
 
-
-#def getAllThresholdsPixel00(): return getAllThresholdsType0(0x0A, 0x0B)
-#def getAllThresholdsPixel01(): return getAllThresholdsType1(0x0B, 0x0C)
-#def getAllThresholdsPixel02(): return getAllThresholdsType2(0x0C, 0x0D)
-#def getAllThresholdsPixel03(): return getAllThresholdsType3(0x0D, 0x0E)
-#def getAllThresholdsPixel04(): return getAllThresholdsType0(0x0F, 0x10)
-#def getAllThresholdsPixel05(): return getAllThresholdsType1(0x10, 0x11)
-#def getAllThresholdsPixel06(): return getAllThresholdsType2(0x11, 0x12)
-#def getAllThresholdsPixel07(): return getAllThresholdsType3(0x12, 0x13)
-#def getAllThresholdsPixel08(): return getAllThresholdsType0(0x14, 0x15)
-#def getAllThresholdsPixel09(): return getAllThresholdsType1(0x15, 0x16)
-#def getAllThresholdsPixel10(): return getAllThresholdsType2(0x16, 0x17)
-#def getAllThresholdsPixel11(): return getAllThresholdsType3(0x17, 0x18)
-#def getAllThresholdsPixel12(): return getAllThresholdsType0(0x19, 0x1A)
-#def getAllThresholdsPixel13(): return getAllThresholdsType1(0x1A, 0x1B)
-#def getAllThresholdsPixel14(): return getAllThresholdsType2(0x1B, 0x1C)
-#def getAllThresholdsPixel15(): return getAllThresholdsType3(0x1C, 0x1D)
-
+    def setActiveThresholds(self, idx):
+        self.thresholdReg1 = self.getAllThresholds[idx]["reg1"]
+        self.thresholdReg2 = self.getAllThresholds[idx]["reg2"]
 
 pixels = {
     0  : pixelInfo( 0, 0x0A, 0x0B, getAllThresholdsType0, 0x01, 0x00, 0x01),
@@ -110,3 +109,46 @@ pixels = {
     14 : pixelInfo(14, 0x1B, 0x1C, getAllThresholdsType2, 0x34, 0x40, 0x00),
     15 : pixelInfo(15, 0x1C, 0x1D, getAllThresholdsType3, 0x38, 0x80, 0x00),
 }
+
+regThresholdAddresses = {
+    0x0A:0x00,
+    0x0B:0x02,
+    0x0C:0x08,
+    0x0D:0x20,
+    0x0E:0x80,
+    0x0F:0x00,
+    0x10:0x02, 
+    0x11:0x08,
+    0x12:0x20,
+    0x13:0x80,
+    0x14:0x00,
+    0x15:0x02,
+    0x16:0x08,
+    0x17:0x20,
+    0x18:0x80,
+    0x19:0x00,
+    0x1A:0x02,
+    0x1B:0x08,
+    0x1C:0x20,
+    0x1D:0x80,
+}
+
+
+#for idx, _  in enumerate(getAllThresholdsType0(None, None)):
+#    for i, p in pixels.items():
+#        p.setActiveThresholds(idx)
+#        print p.pixelNum, get_binary_string(p.thresholdReg2), get_binary_string(p.thresholdReg1), p.reg2AddressTh, p.reg1AddressTh, p.getAllThresholds[0]["mask2"], p.getAllThresholds[0]["mask1"]
+#
+#        regThresholdAddresses[p.reg1AddressTh] = update_binary_num(regThresholdAddresses[p.reg1AddressTh], p.thresholdReg1, p.getAllThresholds[0]["mask1"])
+#        regThresholdAddresses[p.reg2AddressTh] = update_binary_num(regThresholdAddresses[p.reg2AddressTh], p.thresholdReg2, p.getAllThresholds[0]["mask2"])
+#
+#    for i, reg in regThresholdAddresses.items():
+#        print i, get_binary_string(reg)
+
+#t0 = getAllThresholdsType0(None, None)
+#t1 = getAllThresholdsType1(None, None)
+#t2 = getAllThresholdsType2(None, None)
+#t3 = getAllThresholdsType3(None, None)
+#
+#for i, _  in enumerate(t0):
+#    print t0[i]["binary"], t1[i]["binary"], t2[i]["binary"], t3[i]["binary"]
