@@ -101,10 +101,10 @@ if __name__ == '__main__':
                 ('w', i2c.r.ETROC_REGB_ADDRESS, 0x06, 0x40 ), # disable (40)/enable (41) scrambling
                 ('w', i2c.r.ETROC_REGA_ADDRESS, 0x01, Qinj ), # default (37), Q injected amplitude
                 ('w', i2c.r.ETROC_REGB_ADDRESS, 0x04, phase), # default (00), Phase setting
-                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x04, 0x00 ), # default 0x11 
-                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0xFF ), # default (01)
-                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x06, 0xFF ), # default (00)
-                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x07, 0x40 ), # default (01)
+                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x04, 0x00 ), # default 0x11, Set Discriminator out
+                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x05, 0xFF ), # default (01), Set Q injected pixel
+                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x06, 0xFF ), # default (00), Set Q injected pixel
+                ('w', i2c.r.ETROC_REGA_ADDRESS, 0x07, 0x40 ), # default (01), Set SRO or DMRO mode
             ]
 
             for regAddress, threshold in bf.regThresholdAddresses.items():
@@ -128,10 +128,16 @@ if __name__ == '__main__':
                     nHits = 0
                     for l in lines:
                         l = l.split()[1][:-1]
-                        word = int(l, 16)
+                        try:
+                            word = int(l, 16)
+                        except:
+                            pass
+                            print("This word failed:", l)
                         nHits += word % 2
             
                     dataTuple.append((idx, lines, nHits, phase, QinjValue))
+                    print("Finished reading data")
+
     
     #################################################
     # Save recored data to nTuples
@@ -180,10 +186,12 @@ if __name__ == '__main__':
                 hitFlag_[0] = int(word[33],2)
                 pixNum_[0] = pixNum
                 tree.Fill()
+                #print("This word passed:", l, word, thresholdDAC, len(l), len(str(word)))
                 #print("This word passed:", word)
             except:
                 pass
-                #print("This word failed:", word)
+                print("This word failed:", l, word, thresholdDAC, len(l), len(str(word)))
+
     
     tree.Write()
     root_file.Close()
