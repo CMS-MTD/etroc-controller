@@ -43,6 +43,7 @@ def getPixNum(n):
 if __name__ == '__main__':
     parser = optparse.OptionParser("usage: %prog [options]\n")
     parser.add_option('--Qinj', dest='Qinj', type='int', default = 0xFF, help="Set Qinj register value")
+    parser.add_option('--phase', dest='phase', type='int', default = 0x00, help="Set phase register value")
     parser.add_option('--outfile', dest='outfile', default = "data.root", help="Set output root file name")
     parser.add_option('--nEvents', dest='nEvents', type='int', default = 32000, help="Set number of events to take per setting")
     options, args = parser.parse_args()
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     allQinj = getAllQinj()
     Qinj = options.Qinj
     QinjValue = allQinj[Qinj]['fC']
+    fixedPhase = options.phase
 
     outfile = options.outfile
     nEvents = options.nEvents
