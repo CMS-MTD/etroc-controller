@@ -116,13 +116,15 @@ if __name__ == '__main__':
             #--------------------------------------------------
             # Take data for this ETROC setting
             #--------------------------------------------------
-            nRead = 10
+            nRead = 1
             for rIndex in range(nRead):
                 #os.system('./run_read_buffer.sh 10000 constant True')
                 #os.system('./run_read_buffer.sh {} tdc True'.format(nEvents))
-                os.system('./run_ETROC_readout_2links.sh')
+                os.system('./run_ETROC_readout_2links.sh {}'.format(50))
+                with open('/home/daq/Alexey_ETL/SCA_work_scripts/outETROC/Chris_CCLink1_RxRAM_conv_mfix.txt') as f:
                 #with open('/home/daq/Alexey_ETL/SCA_work_scripts/outETROC/Chris_CCLink1_RxRAM_conv.txt') as f:
-                with open('/home/daq/Alexey_ETL/SCA_work_scripts/outETROC/Chris_CCLink1_DBGRAM_conv.txt') as f:
+                #with open('/home/daq/Alexey_ETL/SCA_work_scripts/outETROC/Chris_CCLink1_DBGRAM_conv.txt') as f:
+                    print("Processing runs")
                     lines = f.read().splitlines()
             
                     nHits = 0
