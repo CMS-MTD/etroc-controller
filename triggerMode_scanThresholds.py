@@ -147,7 +147,9 @@ if __name__ == '__main__':
     thresholdDAC_ = array('I',[0])
     nHits_ = array('I',[0])
     wordNum_ = array('I',[0])
+    eventNum_ = array('I',[0])
     word_ = array('I',[0])
+    HEAD_ = array('I',[0])
     TOT_ = array('I',[0])
     TOA_ = array('I',[0])
     CAL_ = array('I',[0])
@@ -158,7 +160,9 @@ if __name__ == '__main__':
     tree.Branch('thresholdDAC', thresholdDAC_, 'thresholdDAC/I')
     tree.Branch('nHits', nHits_, 'nHits/I')
     tree.Branch('wordNum', wordNum_, 'wordNum/I')
+    tree.Branch('eventNum', eventNum_, 'eventNum/I')
     tree.Branch('word', word_, 'word/I')
+    tree.Branch('HEAD', HEAD_, 'HEAD/I')
     tree.Branch('TOT', TOT_, 'TOT/I')
     tree.Branch('TOA', TOA_, 'TOA/I')
     tree.Branch('CAL', CAL_, 'CAL/I')
@@ -172,14 +176,22 @@ if __name__ == '__main__':
         nHits_[0] = nHits
         phaseDAC_[0] = phase
         QinjValue_[0] = QinjValue
+        
+        eventNum = 0
+        eventTracker = 9999
         for ll in lines:
-            n = int(ll.split()[0][:-1])
-            l = ll.split()[1][:-1]
-            word = bin(int(l,16))
-            pixNum = getPixNum(n)
             try:
+                n = int(ll.split()[0][:-1])
+                if eventTracker > n: eventNum += 1
+                eventTracker = n
+
+                l = ll.split()[1][:-1]
+                word = format(int(l,16), "#034b")
+                pixNum = getPixNum(n)
                 wordNum_[0] = n
+                eventNum_[0] = eventNum
                 word_[0] = int(l,16)
+                HEAD_[0] = int(word[2:4],2)
                 TOT_[0] = int(word[4:13],2)
                 TOA_[0] = int(word[13:23],2)
                 CAL_[0] = int(word[23:33],2)
