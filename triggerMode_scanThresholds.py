@@ -31,13 +31,10 @@ def getPixNum(n):
         pixNum = 100
     elif n == nEventsPerPacket+2:
         pixNum = 101
+    elif n<1 or  nEventsPerPacket+2<n:
+        pixNum = 99
     else:
-        for p in range(0,15+1):
-            if (n-2) - nEventsPerPixel*(p+1) < 0:
-                pixNum = p
-                break
-            else:
-                continue
+        pixNum = int((n-2) / nEventsPerPixel)
 
     pMap = [15, 11, 7, 3, 14, 10, 6, 2, 13, 9, 5, 1, 12, 8, 4, 0]
     pixNum = pMap[pixNum] if pixNum < 20 else pixNum
